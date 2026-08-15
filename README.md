@@ -1,2 +1,2 @@
 # stacc
-ST Automated Campaign Control
+ST Automated Campaign Controller

@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: stacc_api_rest
+  jpa:
+    hibernate:
+      ddl-auto: update
+  liquibase:
+    change-log: classpath:db/changelog/changelog.sql
+
+server:
+  port: 8000
+  http2:
+    enabled: true
+
+# Actuator configuration for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+  health:
+    defaults:
+      enabled: true
+    db:
+      enabled: true
+  tracing:
+    enabled: ${MANAGEMENT_TRACING_EXPORTER_OTLP_ENABLED:false}
+    sampling:
+      probability: 1.0
+    exporter:
+      otlp:
+        enabled: ${MANAGEMENT_TRACING_EXPORTER_OTLP_ENABLED:false}
+        endpoint: ${MANAGEMENT_TRACING_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  otlp:
+    enabled: ${MANAGEMENT_OTLP_ENABLED:false}
+    endpoint: ${MANAGEMENT_OTLP_ENDPOINT:http://localhost:4317}
+    metrics:
+      enabled: ${MANAGEMENT_OTLP_METRICS_ENABLED:false}
+      endpoint: ${MANAGEMENT_METRICS_OTLP_ENDPOINT:http://localhost:4318/v1/metrics}

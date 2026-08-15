@@ -1,0 +1,92 @@
+# Multi-stage build for Java Spring Boot application
+
+# Stage 1: Build stage
+FROM oraclelinux:10 AS builder
+
+# Install OpenJDK 21 and Maven
+RUN dnf update -y && \
+    dnf install -y java-21-openjdk-devel maven && \
+    dnf clean all
+
+# Set working directory
+WORKDIR /app
+
+# Create simple Maven settings using only Maven Central
+RUN mkdir -p /root/.m2 && \
+    echo '<?xml version="1.0" encoding="UTF-8"?>' > /root/.m2/settings.xml && \
+    echo '<settings>' >> /root/.m2/settings.xml && \
+    echo '  <mirrors>' >> /root/.m2/settings.xml && \
+    echo '    <mirror>' >> /root/.m2/settings.xml && \
+    echo '      <id>central</id>' >> /root/.m2/settings.xml && \
+    echo '      <mirrorOf>*</mirrorOf>' >> /root/.m2/settings.xml && \
+    echo '      <url>https://repo1.maven.org/maven2</url>' >> /root/.m2/settings.xml && \
+    echo '    </mirror>' >> /root/.m2/settings.xml && \
+    echo '  </mirrors>' >> /root/.m2/settings.xml && \
+    echo '</settings>' >> /root/.m2/settings.xml
+
+# Copy pom.xml first to leverage Docker layer caching
+COPY pom.xml .
+
+# Download dependencies (this layer will be cached if pom.xml doesn't change)
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+ARG SKIP_TESTS=true
+RUN if [ "$SKIP_TESTS" = "true" ]; then \
+        mvn clean package -DskipTests; \
+    else \
+        mvn clean test package; \
+    fi
+
+# Stage 2: Runtime stage
+FROM oraclelinux:10 AS runtime
+
+# Install Java runtime and curl for health checks
+RUN dnf update -y && \
+    dnf install -y java-21-openjdk-headless curl && \
+    dnf clean all
+
+# Create app user
+RUN groupadd -r appgroup && \
+    useradd -r -g appgroup -u 1001 appuser
+
+# OTEL version
+ENV OTEL_VERSION=2.27.0
+
+# Set working directory
+WORKDIR /app
+
+# Ensure OTEL_VERSION is set (e.g., ENV OTEL_VERSION=2.27.0)
+# Downlaod OTEL agent
+RUN set -eux; \
+    URL="https://repo1.maven.org/maven2/io/opentelemetry/javaagent/opentelemetry-javaagent/${OTEL_VERSION}/opentelemetry-javaagent-${OTEL_VERSION}.jar"; \
+    curl -fsSL -o opentelemetry-javaagent.jar "${URL}"; \
+    curl -fsSL -o opentelemetry-javaagent.jar.sha256 "${URL}.sha256"; \
+    echo "$(cat opentelemetry-javaagent.jar.sha256)  opentelemetry-javaagent.jar" | sha256sum -c -; \
+    rm opentelemetry-javaagent.jar.sha256
+
+# Create a volume for temporary files - this will be writable even in restricted environments
+VOLUME ["/tmp"]
+
+# Expose port
+EXPOSE 8000
+
+# Copy jar from build stage
+COPY --from=builder /app/target/stacc_api_rest-*.jar app.jar
+
+# Change ownership
+RUN chown -R appuser:appgroup /app
+
+# Switch to app user
+USER appuser
+
+# Add health check using the Spring Boot Actuator health endpoint
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run the application with explicit Java system properties
+# Use default /tmp which will be mounted as a volume and thus writable
+CMD ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-Dserver.tomcat.basedir=/tmp", "-javaagent:opentelemetry-javaagent.jar", "-jar", "app.jar"]
