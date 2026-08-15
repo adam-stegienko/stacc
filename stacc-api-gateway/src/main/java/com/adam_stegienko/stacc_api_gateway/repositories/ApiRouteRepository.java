@@ -1,0 +1,1 @@
+package com.adam_stegienko.stacc_api_gateway.repositories;

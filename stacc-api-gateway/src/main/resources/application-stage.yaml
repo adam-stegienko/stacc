@@ -1,0 +1,14 @@
+gateway:
+  routes:
+    campaign-controller-api: http://campaign-controller-api.stage.svc.cluster.local:8081
+    google-api: http://google-ads-api.stage.svc.cluster.local:8082
+
+# OpenAPI properties
+springdoc:
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    io.micrometer.tracing: WARN
+    org.springframework.web: WARN

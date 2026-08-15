@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: stacc_api_gateway
+
+server:
+  port: 8000
+  http2:
+    enabled: true
+
+gateway:
+  routes:
+    campaign-controller-api:
+      uri: ${GATEWAY_ROUTES_CAMPAIGN-CONTROLLER-API:http://localhost:8081}
+      filters:
+        # Strip out duplicate CORS/Vary headers that we saw earlier
+        - DeduplicateResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary RETAIN_LAST
+        # Prevent HTTP chunk/length protocol mismatches on small payloads
+        - RemoveResponseHeader=Transfer-Encoding
+    google-api:
+      uri: ${GATEWAY_ROUTES_GOOGLE-API:http://localhost:8082}
+      filters:
+        # Strip out duplicate CORS/Vary headers that we saw earlier
+        - DeduplicateResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary RETAIN_LAST
+        # Prevent HTTP chunk/length protocol mismatches on small payloads
+        - RemoveResponseHeader=Transfer-Encoding
+
+# Actuator configuration for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+  health:
+    defaults:
+      enabled: true
+    db:
+      enabled: true
+  tracing:
+    enabled: ${MANAGEMENT_TRACING_EXPORTER_OTLP_ENABLED:false}
+    sampling:
+      probability: 1.0
+    exporter:
+      otlp:
+        enabled: ${MANAGEMENT_TRACING_EXPORTER_OTLP_ENABLED:false}
+        endpoint: ${MANAGEMENT_TRACING_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  otlp:
+    enabled: ${MANAGEMENT_OTLP_ENABLED:false}
+    endpoint: ${MANAGEMENT_OTLP_ENDPOINT:http://localhost:4317}
+    metrics:
+      enabled: ${MANAGEMENT_OTLP_METRICS_ENABLED:false}
+      endpoint: ${MANAGEMENT_METRICS_OTLP_ENDPOINT:http://localhost:4318/v1/metrics}

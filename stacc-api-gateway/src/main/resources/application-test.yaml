@@ -1,0 +1,18 @@
+gateway:
+  routes:
+    campaign-controller-api: http://localhost:18081
+    google-ads-api: http://localhost:18082
+
+# OpenAPI properties
+springdoc:
+  swagger-ui:
+    enabled: true
+    operations-sorter: method
+    path: /swagger-ui
+  api-docs:
+    path: /api-docs
+
+logging:
+  level:
+    io.micrometer.tracing: INFO
+    org.springframework.web: INFO
