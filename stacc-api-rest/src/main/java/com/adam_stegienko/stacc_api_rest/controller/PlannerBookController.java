@@ -82,8 +82,12 @@ public class PlannerBookController {
                 return plannerBookRepository.save(plannerBook);
             })
             .orElseGet(() -> {
+                plannerBookRepository.insertPlannerBook(id,
+                    updatedPlannerBook.getCampaign(),
+                    updatedPlannerBook.getAction(),
+                    updatedPlannerBook.getExecutionDate());
                 updatedPlannerBook.setId(id);
-                return plannerBookRepository.save(updatedPlannerBook);
+                return updatedPlannerBook;
             });
     }
 

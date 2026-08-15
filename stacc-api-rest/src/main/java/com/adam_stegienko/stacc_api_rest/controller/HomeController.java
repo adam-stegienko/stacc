@@ -9,6 +9,6 @@ public class HomeController {
 
   @GetMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
   public String campaignControllerMessage() {
-    return "Campaign Controller App";
+    return "ST Automated Campaign Controller API REST is running.";
   }
 }
