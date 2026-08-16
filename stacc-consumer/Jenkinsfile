@@ -6,7 +6,7 @@ library identifier: "stacc-pipelines@${libraryVersion}", retriever: modernSCM([
     credentialsId: 'jenkins_github_np'
 ])
 
-staccServicePipeline(
+javaPipeline(
     moduleDir: 'stacc-consumer',
     appName: 'stacc-consumer',
     sonarProjectName: 'stacc_consumer',

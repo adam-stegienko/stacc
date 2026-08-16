@@ -1,0 +1,159 @@
+import React, { useState, useRef, useEffect } from "react";
+import "../styles/PlannerbookForm.css";
+import Configuration from "../services/Configuration.jsx";
+import { DEFAULT_TIME_ZONE, parseDateTimeLocalInTimeZone } from "../utils/timezone";
+
+export function PlannerbookForm({ onSubmit }) {
+  const [executionDateValid, setExecutionDateValid] = useState(true);
+  const [isFormVisible, setFormVisible] = useState(false);
+  const [campaignOptions, setCampaignOptions] = useState([]);
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    const loadConfiguration = async () => {
+      try {
+        await Configuration.loadConfig();
+        
+        // Get campaign names from configuration and create options
+        const campaignNames = Configuration.get('googleAds.campaignNames');
+        if (campaignNames) {
+          const options = campaignNames.split(',').map(name => name.trim());
+          setCampaignOptions(options);
+        }
+      } catch (error) {
+        console.error("Error loading configuration:", error);
+      }
+    };
+
+    loadConfiguration();
+  }, []);
+
+  const handleCreateClick = () => {
+    setFormVisible(true);
+  };
+
+  const handleCloseForm = () => {
+    setFormVisible(false);
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    
+    if (!Configuration.isConfigLoaded()) {
+      console.error("Configuration not loaded");
+      return;
+    }
+
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+
+    data.action = data.action === "Enable" ? 1 : 0;
+
+    const executionDate = parseDateTimeLocalInTimeZone(
+      data.executionDate,
+      DEFAULT_TIME_ZONE
+    );
+    if (!executionDate || executionDate.getTime() < Date.now()) {
+      setExecutionDateValid(false);
+      return;
+    } else {
+      setExecutionDateValid(true);
+    }
+
+    try {
+      const apiUrl = Configuration.get('apiUrl');
+      const url = `${apiUrl}/v1/api/plannerbooks`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      if (onSubmit) {
+        onSubmit(responseData);
+      }
+      formRef.current.reset();
+      window.location.reload();
+      handleCloseForm();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    }
+  };
+
+  const handleCancelClick = (event) => {
+    event.preventDefault();
+    handleCloseForm();
+  };
+
+  return (
+    <>
+      {!isFormVisible && (
+        <button
+          className="form-button create-button-form"
+          onClick={handleCreateClick}
+        >
+          Create
+        </button>
+      )}
+      {isFormVisible && (
+        <div className="form-border">
+          <form className="form" onSubmit={handleSubmit} ref={formRef}>
+            <h2 className="form-title">Manage Campaign</h2>
+            <select className="form-select" name="campaign" required>
+              <option value="" disabled>
+                --Select Campaign--
+              </option>
+              {campaignOptions.map((campaign) => (
+                <option key={campaign} value={campaign}>
+                  {campaign}
+                </option>
+              ))}
+            </select>
+            <select className="form-select" name="action" required>
+              <option value="" disabled>
+                --Select Action--
+              </option>
+              <option value="Enable">Enable</option>
+              <option value="Disable">Disable</option>
+            </select>
+            <input
+              className="form-input"
+              type="datetime-local"
+              name="executionDate"
+              placeholder="Execution Date"
+              required
+              onChange={() => setExecutionDateValid(true)}
+            />
+            <p className="form-hint">Input is interpreted as {DEFAULT_TIME_ZONE} time.</p>
+            {!executionDateValid && (
+              <p className="form-error">
+                Execution date cannot be in the past ({DEFAULT_TIME_ZONE}).
+              </p>
+            )}
+            <div className="all-form-buttons">
+              <button className="form-button" type="submit">
+                Submit
+              </button>
+              <button
+                className="form-button cancel-button-form"
+                onClick={handleCancelClick}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default PlannerbookForm;

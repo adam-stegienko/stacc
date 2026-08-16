@@ -6,7 +6,7 @@ library identifier: "stacc-pipelines@${libraryVersion}", retriever: modernSCM([
     credentialsId: 'jenkins_github_np'
 ])
 
-staccServicePipeline(
+javaPipeline(
     moduleDir: 'stacc-google-api-rest',
     appName: 'stacc-google-api-rest',
     sonarProjectName: 'stacc_google_api_rest',

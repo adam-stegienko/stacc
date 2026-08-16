@@ -6,7 +6,7 @@ library identifier: "stacc-pipelines@${libraryVersion}", retriever: modernSCM([
     credentialsId: 'jenkins_github_np'
 ])
 
-staccServicePrPipeline(
+javaPrPipeline(
     moduleDir: 'stacc-api-gateway',
     appName: 'stacc-api-gateway',
     sonarProjectName: 'stacc_api_gateway',

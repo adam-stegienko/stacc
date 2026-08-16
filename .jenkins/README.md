@@ -4,8 +4,10 @@ This repository now uses a Jenkins Shared Library layout without requiring a glo
 
 Reusable pipeline code lives in:
 
-- `vars/staccServicePipeline.groovy`
-- `vars/staccServicePrPipeline.groovy`
+- `vars/javaPipeline.groovy`
+- `vars/javaPrPipeline.groovy`
+- `vars/frontendPipeline.groovy`
+- `vars/frontendPrPipeline.groovy`
 - `src/com/stacc/jenkins/StaccPipelineSupport.groovy`
 
 Each module `Jenkinsfile` and `Jenkinsfile.pr` dynamically loads the library from this same repository using:
