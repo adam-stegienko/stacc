@@ -30,7 +30,7 @@ class StaccGoogleApiRestTests {
     void homeEndpointIsAccessible() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("ST Automated Campaign Controller Google Api Rest"));
+                .andExpect(content().string("ST Automated Campaign Controller Google Api Rest is running!"));
     }
 
     @Test

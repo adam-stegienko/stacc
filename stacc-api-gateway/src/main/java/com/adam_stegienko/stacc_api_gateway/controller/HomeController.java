@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HomeController {
 
   @GetMapping("/")
-  public String campaignControllerMessage() {
-    return "ST Automated Campaign Controller Api Gateway";
+  public String staccApiGatewayMessage() {
+    return "ST Automated Campaign Controller Api Gateway is running!";
   }
 }

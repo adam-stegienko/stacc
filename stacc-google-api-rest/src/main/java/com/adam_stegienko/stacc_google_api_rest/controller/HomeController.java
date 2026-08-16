@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HomeController {
 
   @GetMapping("/")
-  public String campaignControllerMessage() {
-    return "ST Automated Campaign Controller Google Api Rest";
+  public String staccGoogleApiRestMessage() {
+    return "ST Automated Campaign Controller Google Api Rest is running!";
   }
 }

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HomeController {
 
   @GetMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
-  public String campaignControllerMessage() {
-    return "ST Automated Campaign Controller API REST is running.";
+  public String staccApiRestMessage() {
+    return "ST Automated Campaign Controller Api Rest is running!";
   }
 }

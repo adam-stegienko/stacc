@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: stacc_scheduler
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+
+rabbitmq:
+  exchange: ${RABBITMQ_EXCHANGE:stacc.exchange}
+  queue: ${RABBITMQ_QUEUE:stacc.campaign.execution.queue}
+  routing-key: ${RABBITMQ_ROUTING_KEY:stacc.campaign.execute}
+  dlx: ${RABBITMQ_DLX:stacc.dlx}
+  error-queue: ${RABBITMQ_ERROR_QUEUE:stacc.campaign.execution.error.queue}
+  error-routing-key: ${RABBITMQ_ERROR_ROUTING_KEY:stacc.campaign.execute.error}
+
+cc-api-rest:
+  base-url: ${CC_API_REST_BASE_URL:http://localhost:8080}
+
+google-ads-api:
+  base-url: ${GOOGLE_ADS_API_BASE_URL:http://localhost:8081}
+  customer-id: ${GOOGLE_ADS_API_CUSTOMER_ID:}
+
+scheduler:
+  check-interval-ms: ${SCHEDULER_CHECK_INTERVAL_MS:30000}
+  initial-delay-ms: ${SCHEDULER_INITIAL_DELAY_MS:5000}
+
+server:
+  port: 8000
+  http2:
+    enabled: true
+
+# Actuator configuration for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+  health:
+    defaults:
+      enabled: true
+  tracing:
+    enabled: ${MANAGEMENT_TRACING_EXPORTER_OTLP_ENABLED:false}
+    sampling:
+      probability: 1.0
+    exporter:
+      otlp:
+        enabled: ${MANAGEMENT_TRACING_EXPORTER_OTLP_ENABLED:false}
+        endpoint: ${MANAGEMENT_TRACING_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  otlp:
+    enabled: ${MANAGEMENT_OTLP_ENABLED:false}
+    endpoint: ${MANAGEMENT_OTLP_ENDPOINT:http://localhost:4317}
+    metrics:
+      enabled: ${MANAGEMENT_OTLP_METRICS_ENABLED:false}
+      endpoint: ${MANAGEMENT_METRICS_OTLP_ENDPOINT:http://localhost:4318/v1/metrics}

@@ -28,7 +28,7 @@ class StaccApiGatewayTests {
     void homeEndpointIsAccessible() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("ST Automated Campaign Controller Api Gateway"));
+                .andExpect(content().string("ST Automated Campaign Controller Api Gateway is running!"));
     }
 
     @Test

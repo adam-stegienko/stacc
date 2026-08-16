@@ -4,11 +4,11 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.adam_stegienko.stacc_api_gateway</groupId>
-  <artifactId>stacc_api_gateway</artifactId>
+  <groupId>com.adam_stegienko.stacc_scheduler</groupId>
+  <artifactId>stacc_scheduler</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <name>stacc_api_gateway</name>
-  <description>ST Automated Campaign Controller Api Gateway</description>
+  <name>stacc_scheduler</name>
+  <description>ST Automated Campaign Controller Scheduler</description>
   <packaging>jar</packaging>
   <properties>
     <java.version>21</java.version>
@@ -44,18 +44,10 @@
       <version>3.0.0</version>
     </dependency>
     <dependency>
-        <groupId>net.bytebuddy</groupId>
-        <artifactId>byte-buddy</artifactId>
-        <version>1.17.8</version>
-        <scope>runtime</scope>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-amqp</artifactId>
+      <version>3.4.4</version>
     </dependency>
-    <dependency>
-        <groupId>net.bytebuddy</groupId>
-        <artifactId>byte-buddy-agent</artifactId>
-        <version>1.17.8</version>
-        <scope>runtime</scope>
-    </dependency>
-
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -67,7 +59,12 @@
       <version>5.20.0</version>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-inline</artifactId>
+      <version>5.2.0</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson</groupId>
       <artifactId>jackson-bom</artifactId>
@@ -128,7 +125,6 @@
       <artifactId>micrometer-registry-prometheus</artifactId>
       <version>1.14.5</version>
     </dependency>
-
     <!-- <dependency>
       <groupId>catalog.otel.agent</groupId>
       <artifactId>jar</artifactId>
@@ -173,8 +169,8 @@
                     --add-opens java.base/java.lang.reflect=ALL-UNNAMED
                     --add-opens java.base/java.text=ALL-UNNAMED
                     --add-opens java.base/java.util.stream=ALL-UNNAMED
+                    -XX:+EnableDynamicAgentLoading
                     -Djdk.instrument.traceUsage=false
-                    -javaagent:${project.build.directory}/byte-buddy-agent-1.17.8.jar
                 </argLine>
             </configuration>
         </plugin>
@@ -203,32 +199,11 @@
     </pluginManagement>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-byte-buddy-agent</id>
-            <phase>process-test-classes</phase>
-            <goals><goal>copy</goal></goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>net.bytebuddy</groupId>
-                  <artifactId>byte-buddy-agent</artifactId>
-                  <version>1.17.8</version>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>3.4.4</version>
         <configuration>
-            <mainClass>com.adam_stegienko.stacc_api_gateway.StaccApiGateway</mainClass>
+            <mainClass>com.adam_stegienko.stacc_scheduler.CampaignControllerScheduler</mainClass>
         </configuration>
         <executions>
             <execution>
@@ -238,6 +213,33 @@
             </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.liquibase</groupId>
+        <artifactId>liquibase-maven-plugin</artifactId>
+        <version>4.27.0</version>
+        <configuration>
+          <skip>true</skip>
+          <diffChangeLogFile>src/main/resources/config/liquibase/changelog/${maven.build.timestamp}_changelog.xml</diffChangeLogFile>
+          <referenceUrl>hibernate:spring:com.adam_stegienko.stacc_scheduler?dialect=org.hibernate.dialect.PostgreSQLDialect&amp;hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&amp;hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy</referenceUrl>
+          <verbose>false</verbose>
+        </configuration>
+        <executions>
+          <execution>
+            <?m2e execute onConfiguration?>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>update</goal>
+            </goals>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+             <groupId>org.liquibase.ext</groupId>
+             <artifactId>liquibase-hibernate5</artifactId>
+             <version>3.6</version>
+          </dependency>
+        </dependencies>
+      </plugin>
       <!-- SonarQube Maven plugin: enables mvn sonar:sonar goal -->
       <plugin>
         <groupId>org.sonarsource.scanner.maven</groupId>
@@ -246,6 +248,7 @@
       </plugin>
     </plugins>
   </build>
+
 <!-- "BPE_APPEND_JAVA_TOOL_OPTIONS":
         "-javaagent:BOOT-INF/lib/opentelemetry-javaagent-${catalog.otel.agent.jar.get().version}.jar " +
         "-Dotel.javaagent.extensions=BOOT-INF/lib/http-healthz-extension-${catalog.otel.agent.extension.healthz.get().version}.jar ", -->
