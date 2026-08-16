@@ -1,14 +1,23 @@
-Configure a Jenkins Shared Library named `stacc-pipelines` that points to this repository.
+# Jenkins Shared Library
 
-Required layout now lives in:
+This repository now uses a Jenkins Shared Library layout without requiring a globally preconfigured library entry in Jenkins.
+
+Reusable pipeline code lives in:
+
 - `vars/staccServicePipeline.groovy`
 - `vars/staccServicePrPipeline.groovy`
 - `src/com/stacc/jenkins/StaccPipelineSupport.groovy`
 
-Expected Jenkins usage:
+Each module `Jenkinsfile` and `Jenkinsfile.pr` dynamically loads the library from this same repository using:
 
 ```groovy
-@Library('stacc-pipelines') _
+def libraryVersion = env.CHANGE_BRANCH ?: env.BRANCH_NAME ?: 'master'
+
+library identifier: "stacc-pipelines@${libraryVersion}", retriever: modernSCM([
+    $class: 'GitSCMSource',
+    remote: 'git@github.com:adam-stegienko/stacc.git',
+    credentialsId: 'jenkins_github_np'
+])
 ```
 
-After the library is configured in Jenkins global settings, each module `Jenkinsfile` and `Jenkinsfile.pr` can stay as a thin wrapper.
+That means no `Manage Jenkins -> Global Pipeline Libraries` setup should be required, assuming the Jenkins instance already has the Git and Pipeline Shared Library plugins available.

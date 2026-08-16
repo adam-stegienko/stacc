@@ -1,4 +1,10 @@
-@Library('stacc-pipelines') _
+def libraryVersion = env.CHANGE_BRANCH ?: env.BRANCH_NAME ?: 'master'
+
+library identifier: "stacc-pipelines@${libraryVersion}", retriever: modernSCM([
+    $class: 'GitSCMSource',
+    remote: 'git@github.com:adam-stegienko/stacc.git',
+    credentialsId: 'jenkins_github_np'
+])
 
 staccServicePipeline(
     moduleDir: 'stacc-api-gateway',
