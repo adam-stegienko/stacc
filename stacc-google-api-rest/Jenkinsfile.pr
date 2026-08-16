@@ -4,6 +4,36 @@ def cleanGit() {
     sh 'git clean -fdx'
 }
 
+def hasRelatedChanges(String moduleDir) {
+    def changeSets = currentBuild.changeSets
+    if (changeSets == null || changeSets.isEmpty()) {
+        return true
+    }
+
+    def affectedPaths = []
+    for (changeLogSet in changeSets) {
+        for (entry in changeLogSet.items) {
+            for (file in entry.affectedFiles) {
+                affectedPaths << file.path
+            }
+        }
+    }
+
+    if (affectedPaths.isEmpty()) {
+        return true
+    }
+
+    boolean monorepoPathsDetected = affectedPaths.any { it.startsWith('stacc-') }
+    if (monorepoPathsDetected) {
+        return affectedPaths.any { it.startsWith("${moduleDir}/") }
+    }
+
+    return affectedPaths.any {
+        it == 'pom.xml' || it == 'Dockerfile' || it == 'Jenkinsfile' || it == 'Jenkinsfile.pr' ||
+        it.startsWith('src/') || it.startsWith('config/') || it.startsWith('helm/')
+    }
+}
+
 pipeline {
     agent any
     environment {
@@ -43,6 +73,11 @@ pipeline {
         }
 
         stage('SonarQube analysis') {
+            when {
+                expression {
+                    return hasRelatedChanges('stacc-google-api-rest')
+                }
+            }
             steps {
                 withMaven() {
                     withSonarQubeEnv(env.SONAR_SERVER) {
@@ -59,7 +94,7 @@ pipeline {
         stage('Docker Build') {
             when {
                 expression {
-                    return currentBuild.currentResult == 'SUCCESS'
+                    return hasRelatedChanges('stacc-google-api-rest') && currentBuild.currentResult == 'SUCCESS'
                 }
             }
             steps {
@@ -84,7 +119,7 @@ pipeline {
         stage('Docker Image Security Scan') {
             when {
                 expression {
-                   return currentBuild.currentResult == 'SUCCESS'
+                   return hasRelatedChanges('stacc-google-api-rest') && currentBuild.currentResult == 'SUCCESS'
                 }
             }
             steps {

@@ -89,6 +89,36 @@ def cleanGit() {
     sh 'git clean -fdx'
 }
 
+def hasRelatedChanges(String moduleDir) {
+    def changeSets = currentBuild.changeSets
+    if (changeSets == null || changeSets.isEmpty()) {
+        return true
+    }
+
+    def affectedPaths = []
+    for (changeLogSet in changeSets) {
+        for (entry in changeLogSet.items) {
+            for (file in entry.affectedFiles) {
+                affectedPaths << file.path
+            }
+        }
+    }
+
+    if (affectedPaths.isEmpty()) {
+        return true
+    }
+
+    boolean monorepoPathsDetected = affectedPaths.any { it.startsWith('stacc-') }
+    if (monorepoPathsDetected) {
+        return affectedPaths.any { it.startsWith("${moduleDir}/") }
+    }
+
+    return affectedPaths.any {
+        it == 'pom.xml' || it == 'Dockerfile' || it == 'Jenkinsfile' || it == 'Jenkinsfile.pr' ||
+        it.startsWith('src/') || it.startsWith('config/') || it.startsWith('helm/')
+    }
+}
+
 pipeline {
     agent any
 
@@ -140,6 +170,11 @@ pipeline {
         // }
 
         stage('Calculate Version') {
+            when {
+                expression {
+                    return hasRelatedChanges('stacc-api-rest')
+                }
+            }
             steps {
                 script {
                     // Get current commit SHA
@@ -186,6 +221,11 @@ EOF
         }
 
         stage('Maven Build & Unit Tests') {
+            when {
+                expression {
+                    return hasRelatedChanges('stacc-api-rest')
+                }
+            }
             steps {
                 dir('stacc-api-rest') {
                     withMaven() {
@@ -196,6 +236,11 @@ EOF
         }
 
         stage('SonarQube analysis') {
+            when {
+                expression {
+                    return hasRelatedChanges('stacc-api-rest')
+                }
+            }
             steps {
                 dir('stacc-api-rest') {
                     withMaven() {
@@ -211,7 +256,7 @@ EOF
         stage('Docker Build') {
             when {
                 expression {
-                    return currentBuild.currentResult == 'SUCCESS'
+                    return hasRelatedChanges('stacc-api-rest') && currentBuild.currentResult == 'SUCCESS'
                 }
             }
             steps {
@@ -232,7 +277,7 @@ EOF
         stage('Docker Image Security Scan') {
             when {
                 expression {
-                   return currentBuild.currentResult == 'SUCCESS' && env.BRANCH_NAME?.startsWith('release/1')
+                   return hasRelatedChanges('stacc-api-rest') && currentBuild.currentResult == 'SUCCESS' && env.BRANCH_NAME?.startsWith('release/1')
                 }
             }
             steps {
@@ -243,7 +288,7 @@ EOF
         stage('Docker Push') {
             when {
                 expression {
-                    return currentBuild.currentResult == 'SUCCESS'
+                    return hasRelatedChanges('stacc-api-rest') && currentBuild.currentResult == 'SUCCESS'
                 }
             }
             steps {
