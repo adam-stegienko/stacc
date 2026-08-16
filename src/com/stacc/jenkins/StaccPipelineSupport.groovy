@@ -48,7 +48,8 @@ class StaccPipelineSupport implements Serializable {
     }
 
     private boolean isModuleRootPath(String path) {
-        return path == 'pom.xml' ||
+        return path == 'README.md' ||
+            path == 'pom.xml' ||
             path == 'Dockerfile' ||
             path == 'Jenkinsfile' ||
             path == 'Jenkinsfile.pr' ||
