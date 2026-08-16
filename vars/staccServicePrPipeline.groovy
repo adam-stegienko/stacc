@@ -7,10 +7,10 @@ def call(Map config = [:]) {
     pipeline {
         agent any
         environment {
-            APP_NAME = config.appName
+            APP_NAME = "${config.appName}"
             SONAR_SERVER = 'LabSonarQube'
-            SONAR_PROJECT_NAME = config.sonarProjectName
-            SONAR_PROJECT_KEY = config.sonarProjectKey
+            SONAR_PROJECT_NAME = "${config.sonarProjectName}"
+            SONAR_PROJECT_KEY = "${config.sonarProjectKey}"
             SONAR_SOURCES = './src'
             SONAR_SONAR_LOGIN = 'adam-stegienko'
             DOCKER_REGISTRY = 'registry.stegienko.com:8443'
