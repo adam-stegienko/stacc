@@ -12,3 +12,11 @@ logging:
   level:
     io.micrometer.tracing: WARN
     org.springframework.web: WARN
+
+app:
+  cors:
+    mapping: ${APP_CORS_MAPPING:/gw/**}
+    allowed-origins: "${APP_CORS_ALLOWED_ORIGINS:https://campaign-controller-stage.apps.stegienko.local}"
+    allowed-methods: "${APP_CORS_ALLOWED_METHODS:*}"
+    allowed-headers: "${APP_CORS_ALLOWED_HEADERS:*}"
+    allow-credentials: ${APP_CORS_ALLOW_CREDENTIALS:true}
