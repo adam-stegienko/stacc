@@ -1,0 +1,26 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration
+
+# OpenAPI properties
+springdoc:
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    io.micrometer.tracing: WARN
+    org.springframework.web: WARN
+
+app:
+  cors:
+    mapping: ${APP_CORS_MAPPING:/v1/api/**}
+    allowed-origins: "${APP_CORS_ALLOWED_ORIGINS:https://campaign-controller-stage.apps.stegienko.local,https://campaign-controller-api-gateway-stage.apps.stegienko.local/}"
+    allowed-methods: "${APP_CORS_ALLOWED_METHODS:*}"
+    allowed-headers: "${APP_CORS_ALLOWED_HEADERS:*}"
+    allow-credentials: ${APP_CORS_ALLOW_CREDENTIALS:true}

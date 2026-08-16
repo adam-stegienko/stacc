@@ -1,0 +1,32 @@
+spring:
+  liquibase:
+    enabled: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+
+rabbitmq:
+  exchange: test.stacc.exchange
+  queue: test.stacc.campaign.execution.queue
+  routing-key: stacc.campaign.execute
+  dlx: test.stacc.dlx
+  error-queue: test.stacc.campaign.execution.error.queue
+  error-routing-key: stacc.campaign.execute.error
+
+# OpenAPI properties
+springdoc:
+  swagger-ui:
+    enabled: true
+    operations-sorter: method
+    path: /swagger-ui
+  api-docs:
+    path: /api-docs
+
+logging:
+  level:
+    io.micrometer.tracing: INFO
+    org.springframework.web: INFO
