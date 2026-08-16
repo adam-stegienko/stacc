@@ -34,14 +34,27 @@ class StaccPipelineSupport implements Serializable {
         }
 
         boolean monorepoPathsDetected = affectedPaths.any { it.startsWith('stacc-') }
-        if (monorepoPathsDetected) {
-            return affectedPaths.any { it.startsWith("${moduleDir}/") }
+        return affectedPaths.any { path ->
+            isSharedPipelinePath(path) ||
+                path.startsWith("${moduleDir}/") ||
+                (!monorepoPathsDetected && isModuleRootPath(path))
         }
+    }
 
-        return affectedPaths.any {
-            it == 'pom.xml' || it == 'Dockerfile' || it == 'Jenkinsfile' || it == 'Jenkinsfile.pr' ||
-                it.startsWith('src/') || it.startsWith('config/') || it.startsWith('helm/')
-        }
+    private boolean isSharedPipelinePath(String path) {
+        return path.startsWith('vars/') ||
+            path.startsWith('src/com/stacc/jenkins/') ||
+            path.startsWith('.jenkins/')
+    }
+
+    private boolean isModuleRootPath(String path) {
+        return path == 'pom.xml' ||
+            path == 'Dockerfile' ||
+            path == 'Jenkinsfile' ||
+            path == 'Jenkinsfile.pr' ||
+            path.startsWith('src/') ||
+            path.startsWith('config/') ||
+            path.startsWith('helm/')
     }
 
     String getLatestDockerTag(String registry, String imageName, String majorMinor, String credFile) {

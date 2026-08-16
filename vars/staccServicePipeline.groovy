@@ -225,8 +225,12 @@ EOF
             stage('Cleanup') {
                 steps {
                     script {
-                        sh "echo 'Build completed successfully'"
-                        sh "echo 'Docker image: ${env.DOCKER_REGISTRY}/${env.APP_NAME}:${env.APP_VERSION}'"
+                        if (helper.hasRelatedChanges(config.moduleDir)) {
+                            sh "echo 'Build completed successfully'"
+                            sh "echo 'Docker image: ${env.DOCKER_REGISTRY}/${env.APP_NAME}:${env.APP_VERSION}'"
+                        } else {
+                            sh "echo 'No related changes detected for ${config.moduleDir}; pipeline stages were skipped.'"
+                        }
                     }
                 }
             }
