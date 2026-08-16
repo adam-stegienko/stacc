@@ -7,7 +7,7 @@ def cleanGit() {
 pipeline {
     agent any
     environment {
-        APP_NAME = 'stacc_consumer'
+        APP_NAME = 'stacc-consumer'
         SONAR_SERVER = 'LabSonarQube'
         SONAR_PROJECT_NAME = 'stacc_consumer'
         SONAR_PROJECT_KEY = 'stacc_consumer'

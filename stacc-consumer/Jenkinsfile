@@ -50,8 +50,8 @@ def calculateNextVersion(registry, imageName, baseVersion, currentCommitSHA, cre
 
     // Extract suffix if present (e.g., "0-SNAPSHOT" -> "-SNAPSHOT")
     def suffix = ""
-    def patchPart = versionParts[2]
-    if (patchPart.contains('-')) {
+    def patchPart = versionParts.size() > 2 ? versionParts[2] : null
+    if (patchPart?.contains('-')) {
         def patchSplit = patchPart.split('-', 2)
         suffix = "-${patchSplit[1]}"
     }
@@ -147,7 +147,9 @@ pipeline {
                     sh "echo 'Current commit SHA: ${currentCommitSHA}'"
 
                     // Get version from pom.xml (e.g., "0.10.0-SNAPSHOT" or "0.9.0")
-                    def packageVersion = sh(returnStdout: true, script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout').trim()
+                    def packageVersion = dir('stacc-consumer') {
+                        sh(returnStdout: true, script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout').trim()
+                    }
                     sh "echo 'POM version: ${packageVersion}'"
 
                     // Use Docker registry credentials via netrc file (more secure)
@@ -185,18 +187,22 @@ EOF
 
         stage('Maven Build & Unit Tests') {
             steps {
-                withMaven() {
-                    sh 'mvn -B clean test package'
+                dir('stacc-consumer') {
+                    withMaven() {
+                        sh 'mvn -B clean test package'
+                    }
                 }
             }
         }
 
         stage('SonarQube analysis') {
             steps {
-                withMaven() {
-                    withSonarQubeEnv(env.SONAR_SERVER) {
-                        // Reuse existing compiled classes from previous build; skip tests to save time
-                        sh "mvn -B sonar:sonar -DskipTests -Dsonar.projectKey=${env.SONAR_PROJECT_KEY} -Dsonar.projectName='${env.SONAR_PROJECT_NAME}'"
+                dir('stacc-consumer') {
+                    withMaven() {
+                        withSonarQubeEnv(env.SONAR_SERVER) {
+                            // Reuse existing compiled classes from previous build; skip tests to save time
+                            sh "mvn -B sonar:sonar -DskipTests -Dsonar.projectKey=${env.SONAR_PROJECT_KEY} -Dsonar.projectName='${env.SONAR_PROJECT_NAME}'"
+                        }
                     }
                 }
             }
@@ -209,15 +215,17 @@ EOF
                 }
             }
             steps {
-                sh """
-                    echo 'Building Docker image...'
-                    docker build \
-                        --build-arg SKIP_TESTS=true \
-                        --build-arg APP_VERSION=${env.APP_VERSION} \
-                        --label git.commit.sha=${env.GIT_COMMIT_SHA} \
-                        --label build.timestamp=\$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-                        -t ${env.DOCKER_REGISTRY}/${env.APP_NAME}:${env.APP_VERSION} .
-                """
+                dir('stacc-consumer') {
+                    sh """
+                        echo 'Building Docker image...'
+                        docker build \\
+                            --build-arg SKIP_TESTS=true \\
+                            --build-arg APP_VERSION=${env.APP_VERSION} \\
+                            --label git.commit.sha=${env.GIT_COMMIT_SHA} \\
+                            --label build.timestamp=\$(date -u +%Y-%m-%dT%H:%M:%SZ) \\
+                            -t ${env.DOCKER_REGISTRY}/${env.APP_NAME}:${env.APP_VERSION} .
+                    """
+                }
             }
         }
 
@@ -269,7 +277,7 @@ EOF
                 }
             }
             steps {
-                archiveArtifacts artifacts: "**/target/*.jar", fingerprint: true
+                archiveArtifacts artifacts: "stacc-consumer/target/*.jar", fingerprint: true
             }
         }
 
@@ -281,19 +289,21 @@ EOF
             }
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'ABORTED') {
-                    withMaven() {
-                        script {
-                            try {
-                                // Correct plugin prefix is "versions", not "version".
-                                sh 'mvn -B versions:set -DnewVersion=${APP_VERSION} -DgenerateBackupPoms=false'
-                                sh 'mvn -B deploy -DskipTests'
-                                sh "echo 'Maven deploy successful for version ${env.APP_VERSION}'"
-                            } catch (Exception e) {
-                                if (e.getMessage().contains('cannot be updated') || e.getMessage().contains('400')) {
-                                    sh "echo 'Artifact ${env.APP_VERSION} already exists in repository - skipping deploy'"
-                                    currentBuild.result = 'SUCCESS'
-                                } else {
-                                    throw e
+                    dir('stacc-consumer') {
+                        withMaven() {
+                            script {
+                                try {
+                                    // Correct plugin prefix is "versions", not "version".
+                                    sh 'mvn -B versions:set -DnewVersion=${APP_VERSION} -DgenerateBackupPoms=false'
+                                    sh 'mvn -B deploy -DskipTests'
+                                    sh "echo 'Maven deploy successful for version ${env.APP_VERSION}'"
+                                } catch (Exception e) {
+                                    if (e.getMessage().contains('cannot be updated') || e.getMessage().contains('400')) {
+                                        sh "echo 'Artifact ${env.APP_VERSION} already exists in repository - skipping deploy'"
+                                        currentBuild.result = 'SUCCESS'
+                                    } else {
+                                        throw e
+                                    }
                                 }
                             }
                         }
