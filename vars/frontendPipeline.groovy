@@ -97,7 +97,7 @@ EOF
                 }
                 steps {
                     dir(config.moduleDir) {
-                        sh 'npm ci'
+                        sh 'npm ci --legacy-peer-deps'
                         sh 'npm run build'
                     }
                 }

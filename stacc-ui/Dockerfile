@@ -17,7 +17,7 @@ USER appuser
 COPY package*.json ./
 
 # Install dependencies including devDependencies for build
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Copy the rest of the application code
 COPY . .
