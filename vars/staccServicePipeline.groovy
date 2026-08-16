@@ -184,7 +184,7 @@ EOF
             stage('Archive') {
                 when {
                     expression {
-                        return currentBuild.currentResult == 'SUCCESS'
+                        return helper.hasRelatedChanges(config.moduleDir) && currentBuild.currentResult == 'SUCCESS'
                     }
                 }
                 steps {
@@ -195,7 +195,7 @@ EOF
             stage('Maven Deploy') {
                 when {
                     expression {
-                        return currentBuild.currentResult == 'SUCCESS' && env.BRANCH_NAME?.startsWith('release/')
+                        return helper.hasRelatedChanges(config.moduleDir) && currentBuild.currentResult == 'SUCCESS' && env.BRANCH_NAME?.startsWith('release/')
                     }
                 }
                 steps {
