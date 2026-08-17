@@ -164,7 +164,7 @@ class StaccPipelineSupport implements Serializable {
 
     private String normalizeBaseSemVer(String baseVersion) {
         def version = (baseVersion ?: '').trim()
-        def matcher = version =~ /^(\\d+)\\.(\\d+)\\.(\\d+)(?:[-+].*)?$/
+        def matcher = version =~ /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/
         if (matcher.matches()) {
             return "${matcher[0][1]}.${matcher[0][2]}.${matcher[0][3]}"
         }
