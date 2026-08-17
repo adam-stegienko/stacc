@@ -87,9 +87,7 @@ class StaccPipelineSupport implements Serializable {
     }
 
     void assertSemVerBaseVersion(String baseVersion, String sourceLabel) {
-        try {
-            normalizeBaseSemVer(baseVersion)
-        } catch (IllegalArgumentException e) {
+        if (!normalizeBaseSemVer(baseVersion)) {
             script.error("${sourceLabel} version '${baseVersion}' is not SemVer-compatible. Use MAJOR.MINOR.PATCH (optional -SNAPSHOT).")
         }
     }
@@ -170,7 +168,7 @@ class StaccPipelineSupport implements Serializable {
         if (matcher.matches()) {
             return "${matcher[0][1]}.${matcher[0][2]}.${matcher[0][3]}"
         }
-        throw new IllegalArgumentException("Version '${baseVersion}' is not SemVer-compatible. Expected format like 1.2.3 or 1.2.3-SNAPSHOT")
+        return null
     }
 
     private Map selectChannelRule(String channelRules, String branchName, String changeId, String tagName) {
