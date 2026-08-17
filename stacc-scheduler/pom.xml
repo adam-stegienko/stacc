@@ -203,7 +203,7 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>3.4.4</version>
         <configuration>
-            <mainClass>com.adam_stegienko.stacc_scheduler.CampaignControllerScheduler</mainClass>
+            <mainClass>com.adam_stegienko.stacc_scheduler.StaccScheduler</mainClass>
         </configuration>
         <executions>
             <execution>

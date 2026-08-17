@@ -250,7 +250,7 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>3.4.4</version>
         <configuration>
-            <mainClass>com.adam_stegienko.stacc_google_api_rest.CampaignControllerGoogleApi</mainClass>
+            <mainClass>com.adam_stegienko.stacc_google_api_rest.StaccGoogleApiRest</mainClass>
         </configuration>
         <executions>
             <execution>

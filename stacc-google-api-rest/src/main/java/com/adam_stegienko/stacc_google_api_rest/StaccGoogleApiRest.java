@@ -6,10 +6,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(scanBasePackages = {"com.adam_stegienko.stacc_google_api_rest"})
 @EnableScheduling
-public class CampaignControllerGoogleApi {
+public class StaccGoogleApiRest {
 
   public static void main(String[] args) {
-    SpringApplication.run(CampaignControllerGoogleApi.class, args);
+    SpringApplication.run(StaccGoogleApiRest.class, args);
   }
 
 }
