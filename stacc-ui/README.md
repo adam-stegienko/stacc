@@ -1,4 +1,4 @@
-# Getting Started with Create React App - Campaign Controller
+# Getting Started with Create React App - STACC UI
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
