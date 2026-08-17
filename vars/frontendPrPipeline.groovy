@@ -14,6 +14,7 @@ def call(Map config = [:]) {
             SONAR_SOURCES = './src'
             SONAR_SONAR_LOGIN = 'adam-stegienko'
             DOCKER_REGISTRY = 'registry.stegienko.com:8443'
+            SEMVER_CHANNEL_RULES = "${config.semverChannelRules ?: 'tag=stable,pr=alpha:changeId.buildNumber.shortSha,master=alpha:buildNumber,dev=beta:buildNumber,release/*=rc:buildNumber,*=beta:buildNumber'}"
         }
         options {
             timestamps()
@@ -59,7 +60,24 @@ def call(Map config = [:]) {
                 steps {
                     script {
                         env.GIT_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-                        env.APP_VERSION = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                        def packageVersion = dir(config.moduleDir) {
+                            sh(returnStdout: true, script: 'node -p "require(\'./package.json\').version"').trim()
+                        }
+                        helper.assertSemVerBaseVersion(packageVersion, 'package.json')
+
+                        env.APP_VERSION = helper.calculateSemVerVersion(
+                            '',
+                            env.APP_NAME,
+                            packageVersion,
+                            env.GIT_COMMIT_SHA,
+                            null,
+                            env.BRANCH_NAME,
+                            env.CHANGE_ID,
+                            env.BUILD_NUMBER,
+                            env.SEMVER_CHANNEL_RULES,
+                            env.TAG_NAME
+                        )
+
                         sh "echo 'Current commit SHA: ${env.GIT_COMMIT_SHA}'"
                         sh "echo 'Docker tag to build: ${env.APP_VERSION}'"
                     }

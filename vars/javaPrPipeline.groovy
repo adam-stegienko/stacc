@@ -14,6 +14,7 @@ def call(Map config = [:]) {
             SONAR_SOURCES = './src'
             SONAR_SONAR_LOGIN = 'adam-stegienko'
             DOCKER_REGISTRY = 'registry.stegienko.com:8443'
+            SEMVER_CHANNEL_RULES = "${config.semverChannelRules ?: 'tag=stable,pr=alpha:changeId.buildNumber.shortSha,master=alpha:buildNumber,dev=beta:buildNumber,release/*=rc:buildNumber,*=beta:buildNumber'}"
         }
         options {
             timestamps()
@@ -44,6 +45,41 @@ def call(Map config = [:]) {
                 }
             }
 
+            stage('Calculate Version') {
+                when {
+                    expression {
+                        return helper.hasRelatedChanges(config.moduleDir)
+                    }
+                }
+                steps {
+                    script {
+                        env.GIT_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                        sh "echo 'Current commit SHA: ${env.GIT_COMMIT_SHA}'"
+
+                        def packageVersion = dir(config.moduleDir) {
+                            sh(returnStdout: true, script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout').trim()
+                        }
+                        helper.assertSemVerBaseVersion(packageVersion, 'POM')
+                        sh "echo 'POM version: ${packageVersion}'"
+
+                        env.APP_VERSION = helper.calculateSemVerVersion(
+                            '',
+                            env.APP_NAME,
+                            packageVersion,
+                            env.GIT_COMMIT_SHA,
+                            null,
+                            env.BRANCH_NAME,
+                            env.CHANGE_ID,
+                            env.BUILD_NUMBER,
+                            env.SEMVER_CHANNEL_RULES,
+                            env.TAG_NAME
+                        )
+
+                        sh "echo 'Docker tag to build: ${env.APP_VERSION}'"
+                    }
+                }
+            }
+
             stage('SonarQube analysis') {
                 when {
                     expression {
@@ -51,13 +87,12 @@ def call(Map config = [:]) {
                     }
                 }
                 steps {
-                    withMaven() {
-                        withSonarQubeEnv(env.SONAR_SERVER) {
-                            script {
-                                APP_VERSION = sh(script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout', returnStdout: true).trim()
+                    dir(config.moduleDir) {
+                        withMaven() {
+                            withSonarQubeEnv(env.SONAR_SERVER) {
+                                sh "mvn versions:set -DnewVersion=${env.APP_VERSION}"
+                                sh "mvn clean package sonar:sonar -Dsonar.projectKey=${env.SONAR_PROJECT_KEY} -Dsonar.projectName='${env.SONAR_PROJECT_NAME}'"
                             }
-                            sh "mvn versions:set -DnewVersion=${APP_VERSION}"
-                            sh "mvn clean package sonar:sonar -Dsonar.projectKey=${env.SONAR_PROJECT_KEY} -Dsonar.projectName='${env.SONAR_PROJECT_NAME}'"
                         }
                     }
                 }
@@ -92,7 +127,7 @@ def call(Map config = [:]) {
                     }
                 }
                 steps {
-                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v cache_dir:/opt/cache aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 --timeout 10m0s ${env.DOCKER_REGISTRY}/${env.APP_NAME}:${APP_VERSION}"
+                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v cache_dir:/opt/cache aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 --timeout 10m0s ${env.DOCKER_REGISTRY}/${env.APP_NAME}:${env.APP_VERSION}"
                 }
             }
         }

@@ -19,6 +19,7 @@ def call(Map config = [:]) {
             SONAR_SOURCES = './src'
             SONAR_SONAR_LOGIN = 'adam-stegienko'
             DOCKER_REGISTRY = 'registry.stegienko.com:8443'
+            SEMVER_CHANNEL_RULES = "${config.semverChannelRules ?: 'tag=stable,pr=alpha:changeId.buildNumber.shortSha,master=alpha:buildNumber,dev=beta:buildNumber,release/*=rc:buildNumber,*=beta:buildNumber'}"
         }
         options {
             timestamps()
@@ -61,6 +62,7 @@ def call(Map config = [:]) {
                         def packageVersion = dir(config.moduleDir) {
                             sh(returnStdout: true, script: 'node -p "require(\'./package.json\').version"').trim()
                         }
+                        helper.assertSemVerBaseVersion(packageVersion, 'package.json')
                         sh "echo 'Package.json version: ${packageVersion}'"
 
                         withCredentials([usernamePassword(credentialsId: 'docker_registry_credentials', usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASS')]) {
@@ -77,7 +79,18 @@ EOF
                             """
 
                             try {
-                                env.APP_VERSION = helper.calculateNextVersion(env.DOCKER_REGISTRY, env.APP_NAME, packageVersion, currentCommitSHA, netrcFile)
+                                env.APP_VERSION = helper.calculateSemVerVersion(
+                                    env.DOCKER_REGISTRY,
+                                    env.APP_NAME,
+                                    packageVersion,
+                                    currentCommitSHA,
+                                    netrcFile,
+                                    env.BRANCH_NAME,
+                                    env.CHANGE_ID,
+                                    env.BUILD_NUMBER,
+                                    env.SEMVER_CHANNEL_RULES,
+                                    env.TAG_NAME
+                                )
                             } finally {
                                 sh "rm -f ${netrcFile}"
                             }
